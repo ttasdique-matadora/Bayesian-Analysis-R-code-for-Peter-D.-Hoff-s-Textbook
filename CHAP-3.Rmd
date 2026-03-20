@@ -1,0 +1,511 @@
+---
+title: "CHAP-3_BAYESIAN"
+author: "Tawhid Tasdique"
+date: "2025-12-19"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pkg <- c("tidyverse")
+
+lapply(X = pkg, FUN = library, character.only = T)
+
+```
+
+# Ex-3.1(b)
+
+```{r 3.1(b)}
+
+# dataframe
+dta <- tibble(theta = (0:10)/10) %>% 
+  mutate(
+    likelihood = dbinom(
+      x = 57, 
+      size = 100, 
+      prob = theta
+      )
+  )
+
+# graphics
+dta %>% 
+  ggplot(aes(x = theta, y = likelihood)) + 
+  geom_line(linewidth = 1, color = "blue") + 
+  geom_point(size = 3, color = "red") + 
+  xlab(expression(theta)) +
+  ylab(expression(P(sum(Y[i], i == 1, 100) == 57 ~ "|" ~ theta))) + 
+  labs(
+    title = expression("Likelihood as a function of " ~ theta)
+  )
+
+```
+
+# Ex-3.1(d)
+
+When the prior belief follows the standard uniform distribution, the unmarginalized posterior distribution is equal to the likelihood of the data.  
+
+```{r 3.1(d)}
+
+# dataframe
+dta <- tibble(theta = (0:1000)/1000) %>% 
+  mutate(
+    unmarginalized_posterior = dbinom(x = 57, 
+                                      size = 100, 
+                                      prob = theta)
+  )
+
+# graphics
+dta %>% 
+  ggplot(aes(x = theta, y = unmarginalized_posterior)) + 
+  geom_point(size = 1.5, color = "red") + 
+  xlab(expression(theta)) +
+  ylab(expression(P(theta) %*% P(sum(Y[i], i == 1, 100) == 57 ~ "|" ~ theta))) + 
+  labs(
+    title = expression("Unmarginalized Posterior Density as a function of " ~ theta)
+  )
+
+```
+
+# Ex-3.1(e)
+
+Plot (b) is a discrete version of the plot (d). And, the plot (e) is a scaled version of the plot (d). That's all I have to comment on the relationship among these graphs.
+
+```{r 3.1(e)}
+
+# dataframe
+dta <- tibble(theta = (0:1000)/1000) %>% 
+  mutate(
+    posterior = dbeta(x = theta, 
+                      shape1 = (1+57), 
+                      shape2 = (1+100-57))
+  )
+
+# graphics
+dta %>% 
+  ggplot(aes(x = theta, y = posterior)) + 
+  geom_point(size = 1.5, color = "red") + 
+  xlab(expression(theta)) +
+  ylab(expression(P(theta ~ "|" ~ sum(Y[i], i == 1, 100) == 57))) + 
+  labs(
+    title = expression("Posterior Density as a function of " ~ theta)
+  )
+
+```
+
+# Ex-3.2
+
+## Problems I faced
+
+If your x and y are deterministic functions of each other, contours cannot exist. The x and y axes must be independent for the contour plot to show. I can't give a better explanation at the moment. This is all I got from ChatGPT. So, `a` and `b` were not independent because of their formula, because of how they were constructed. That's why I kept getting an empty contour plot. The parameters $\theta$ and `n` on the other hand, were mutually independent. That's why the contour plot worked.
+
+```{r 3.2}
+
+theta0 <- c(1:9)/10
+n0 <- c(1, 2, 4, 8, 16, 32)
+
+a <- outer(theta0, n0, `*`)
+b <- outer(1 - theta0, n0, `*`)
+
+dta <- expand.grid(
+  theta = theta0,
+  n = n0
+) %>%
+  mutate(
+    shape = theta * n,
+    rate  = (1 - theta) * n,
+    prob  = pbeta(
+      q = 0.5,
+      shape1 = shape,
+      shape2 = rate,
+      lower.tail = FALSE
+    )
+  )
+
+dta %>% 
+  ggplot(aes(x = theta, y = n, z = prob)) +
+  geom_contour_filled() +
+  labs(
+    x = expression(theta),
+    y = "n",
+    title = "Posterior Tail Probability Contours"
+  ) +
+  theme_minimal()
+
+```
+
+# Ex-3.3(b)
+
+```{r 3.3(b)}
+
+n0 <- 1:50
+
+# never use lapply() if you can avail with vectorized operations
+post_mean <- (12 * n0 + 113) / (n0 + 13)
+
+tibble(sample_size = n0, posterior_mean = post_mean) %>% 
+  ggplot(aes(x = sample_size, y = posterior_mean)) + 
+  geom_line(size = 1.1, 
+            color = "blue") + 
+  geom_point(color = "red", 
+             size = 2) + 
+  xlab("Sample Size") + 
+  ylab("Posterior Expectation")
+
+```
+
+# Ex-3.4(a)
+
+```{r 3.4(a)}
+
+cons <- choose(43, 15)
+
+dta <- tibble(theta = seq(0,1000)/1000) %>% 
+  mutate(prior = dbeta(x = theta, shape1 = 2, shape2 = 8), 
+         likelihood = cons*(theta^15)*((1-theta)^28),
+         posterior = dbeta(x = theta, shape1 = 17, shape2 = 36))
+
+dta %>% 
+  ggplot(aes(x = theta)) + 
+  geom_line(aes(y = prior, color = "Prior", linetype = "Prior"),
+            size = 1.5) + 
+  geom_line(aes(y = likelihood, color = "Likelihood", linetype = "Likelihood"),
+            size = 1.5) + 
+  geom_line(aes(y = posterior, color = "Posterior", linetype = "Posterior"),
+            size = 1.5) +
+  scale_color_manual(
+    values = c(
+      "Prior" = "red",
+      "Likelihood" = "darkorange",
+      "Posterior" = "blue"
+    )
+  ) +
+  scale_linetype_manual(
+    values = c(
+      "Prior" = "solid",
+      "Likelihood" = "dashed",
+      "Posterior" = "dashed"
+    )
+  ) +
+  labs(color = "", linetype = "") +
+  theme_minimal()
+
+
+```
+
+# Ex-3.4(b)
+
+```{r 3.4(b)}
+
+cons <- choose(43, 15)
+
+dta <- tibble(theta = seq(0,1000)/1000) %>% 
+  mutate(prior = dbeta(x = theta, shape1 = 8, shape2 = 2), 
+         likelihood = cons*(theta^15)*((1-theta)^28),
+         posterior = dbeta(x = theta, shape1 = 23, shape2 = 30))
+
+dta %>% 
+  ggplot(aes(x = theta)) + 
+  geom_line(aes(y = prior, color = "Prior", linetype = "Prior"),
+            size = 1.5) + 
+  geom_line(aes(y = likelihood, color = "Likelihood", linetype = "Likelihood"),
+            size = 1.5) + 
+  geom_line(aes(y = posterior, color = "Posterior", linetype = "Posterior"),
+            size = 1.5) +
+  scale_color_manual(
+    values = c(
+      "Prior" = "red",
+      "Likelihood" = "purple",
+      "Posterior" = "blue"
+    )
+  ) +
+  scale_linetype_manual(
+    values = c(
+      "Prior" = "solid",
+      "Likelihood" = "dashed",
+      "Posterior" = "dashed"
+    )
+  ) +
+  labs(color = "", linetype = "") +
+  theme_minimal()
+
+```
+
+# Ex-3.4(c)
+
+## Bimodal Prior: Interpretation
+
+The following prior distribution has two peaks, indicating a belief that the recidivism rate is either high or low, rather than being centered around a moderate value like the priors in a) and b).
+
+```{r 3.4(c)}
+
+cons <- choose(43, 15) # to save time
+
+# data frame
+dta <- tibble(theta = seq(0,1000)/1000) %>% 
+  mutate(
+    priorC = 0.75*dbeta(x = theta, shape1 = 2, shape2 = 8) + 0.25*dbeta(x = theta, shape1 = 8, shape2 = 2), 
+    priorB = dbeta(x = theta, shape1 = 8, shape2 = 2), 
+    priorA = dbeta(x = theta, shape1 = 2, shape2 = 8)
+    )
+
+# plots
+dta %>% 
+  ggplot(aes(x = theta)) + 
+  geom_line(aes(y = priorA, color = "Prior A", linetype = "Prior A"),
+            size = 1.5) + 
+  geom_line(aes(y = priorB, color = "Prior B", linetype = "Prior B"),
+            size = 1.5) + 
+  geom_line(aes(y = priorC, color = "Prior C", linetype = "Prior C"),
+            size = 1.5) +
+  scale_color_manual(
+    values = c(
+      "Prior A" = "darkgreen",
+      "Prior B" = "blue",
+      "Prior C" = "red"
+    )
+  ) +
+  scale_linetype_manual(
+    values = c(
+      "Prior A" = "dashed",
+      "Prior B" = "dashed",
+      "Prior C" = "solid"
+    )
+  ) +
+  labs(y = "Prior Density", color = "", linetype = "") +
+  theme_minimal() + 
+  geom_vline(xintercept = 0.8, # mean of prior B
+             linetype = "dashed", 
+             linewidth = 1, 
+             color = "purple") +
+  geom_vline(xintercept = 0.2, # mean of prior A
+             linetype = "dashed", 
+             linewidth = 1, 
+             color = "purple") +
+  geom_vline(xintercept = 0.875, # mode of prior B
+             linetype = "dashed", 
+             linewidth = 1) +
+  geom_vline(xintercept = 0.125, # mode of prior A
+             linetype = "dashed", 
+             linewidth = 1) 
+
+```
+
+# Ex-3.4(d)(iii)
+
+## Approximating the Mode of Mixed Posterior Distribution
+
+The mode of the following mixed posterior distribution appears closer to that of the posterior A and farther from that of the posterior B.
+
+```{r 3.4(d)(iii)}
+
+# constant
+cons <- choose(43, 15)*beta(17, 53)/4*beta(2, 8)
+
+dta <- tibble(theta = seq(0, 1000)/1000) %>% 
+  mutate(
+    unmarginalized_posterior = cons*(3*dbeta(x = theta, shape1 = 17, shape2 = 36) + dbeta(x = theta, shape1 = 23, shape2 = 30)))
+
+
+dta %>% 
+  ggplot(aes(x = theta, y = unmarginalized_posterior)) + 
+  geom_line(color = "hotpink", 
+            linewidth = 1.5, 
+            linetype = "dashed") + 
+  geom_vline(xintercept = (22/51), # mode of posterior B
+             linetype = "dashed", 
+             linewidth = 1) +
+  geom_vline(xintercept = (16/51), # mode of posterior A
+             linetype = "dashed", 
+             linewidth = 1)
+# How come it unimodal?? 
+# Shouldn't it resemble the prior?? 
+# I think maybe the data plays a role in its unimodality.
+
+```
+
+# Ex-3.7(a)
+
+```{r 3.7(a)}
+
+dta <- tibble(theta = seq(0, 1000)/1000) %>% 
+  mutate(posterior = dbeta(x = theta, shape1 = 3, shape2 = 14))
+
+# graphics
+dta %>% 
+  ggplot(aes(x = theta)) + 
+  geom_line(
+    aes(y = posterior, color = "Posterior density"),
+    linewidth = 1.5
+  ) + 
+  geom_hline(
+    aes(yintercept = 1, color = "Uniform prior"),
+    linewidth = 1.2,
+    linetype = "dashed"
+  ) + 
+  geom_vline(
+    aes(xintercept = 2/15, linetype = "Posterior mode"),
+    linewidth = 1
+  ) + 
+  geom_vline(
+    aes(xintercept = 3/17, linetype = "Posterior mean"),
+    linewidth = 1
+  ) +
+  scale_color_manual(
+    values = c(
+      "Posterior density" = "red",
+      "Uniform prior" = "blue"
+    )
+  ) +
+  scale_linetype_manual(
+    values = c(
+      "Posterior mode" = "dashed",
+      "Posterior mean" = "dotted"
+    )
+  ) +
+  labs(
+    x = expression(theta),
+    y = "Density",
+    color = "",
+    linetype = "",
+    title = "Posterior Density with Reference Lines"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "top"
+  )
+
+```
+
+# Ex-3.7(c)
+
+```{r 3.7(c)}
+
+y2 <- 0:278
+
+# intermediate list 1
+inter1 <- y2 * choose(n = 278, k = y2) * beta(a = (y2+3), b = (292-y2)) / beta(a = 3, b = 14)
+
+# intermediate list 2
+inter2 <- (y2^2) * choose(n = 278, k = y2) * beta(a = (y2+3), b = (292-y2)) / beta(a = 3, b = 14)
+
+# 1st raw moment (Beta function is part of derive formula)
+(
+mean_Y2 <- sum(inter1)
+)
+
+# 2nd raw moment (Beta function is part of derive formula)
+(
+moment2 <- sum(inter2)
+)
+
+# variance
+(
+var_Y2 <- moment2 - (mean_Y2^2)
+)
+
+# standard deviation
+(
+sd_Y2 <- var_Y2 %>% sqrt()
+)
+
+# dataframe
+dta <- tibble(Y2 = y2) %>% 
+  mutate(
+    cond_prob = choose(n = 278, k = Y2)*beta(a = (Y2+3), b = (292-Y2))/beta(a = 3, b = 14)
+  )
+
+# mode
+(
+mode_Y2 <- dta %>%
+  slice_max(cond_prob, n = 1) %>%
+  pull(Y2)
+)
+
+# graphics (labels via plotmath)
+dta %>% 
+  ggplot(aes(x = Y2, y = cond_prob)) +
+  geom_line(linewidth = 1.5, 
+            color = "red") + 
+  geom_vline(xintercept = mean_Y2, # mean
+             linewidth = 1, 
+             linetype = "dashed") + 
+  geom_vline(xintercept = mode_Y2, # mode
+             linewidth = 1, 
+             linetype = "dotted") + 
+  xlab(expression(Y[2])) + 
+  ylab(expression(Pr(Y[2] == y[2] ~ "|" ~ Y[1] == 2)))
+
+```
+
+# Ex-3.7(d)
+
+Since the modes of $(Y_2 \mid \theta = \hat{\theta})$ and $(Y_2 \mid Y_1 = 2)$ are equal (although their means are far apart), the distributions are still **comparable** in terms of central tendency.
+
+I would prefer to make predictions based of $(Y_2 \mid \theta = \hat{\theta})$ rather than $(Y_2 \mid Y_1 = 2)$ because the former has higher precision (lower variance) and it also incorporates data from the pilot study via $\hat{\theta}$ which is the **mode** and the **MLE** from $(\theta \mid Y_1 = 2)$. 
+
+```{r 3.7(d)}
+
+y2 <- 0:278
+
+# MLE and Posterior Mode
+theta_hat <- 2/15
+
+# sample size
+n2 <- 278
+
+# dataframe
+dta <- tibble(Y2 = y2) %>% 
+  mutate(
+    cond_prob = choose(n = n2, k = Y2)*(theta_hat^Y2)*(1-theta_hat)^(n2-Y2)
+  )
+
+# mean of Y2 conditioned on MLE of theta
+mean_Y2 <- sum(dta$Y2*dta$cond_prob)
+
+# 2nd raw moment of Y2 conditioned on MLE of theta
+moment2 <- sum((dta$Y2^2)*dta$cond_prob)
+
+# variance of Y2 conditioned on MLE of theta
+var_Y2 <- moment2 - mean_Y2^2
+
+# standard deviation of Y2 conditioned on MLE of theta
+sd_Y2 <- sqrt(var_Y2)
+
+# mode of Y2 conditioned on MLE of theta
+(
+mode_Y2 <- dta %>%
+  slice_max(cond_prob, n = 1) %>%
+  pull(Y2)
+)  
+
+# graphics (labels via plotmath)
+dta %>% 
+  ggplot(aes(x = Y2, y = cond_prob)) +
+  geom_line(linewidth = 1, 
+            color = "red") + 
+  geom_vline(xintercept = mode_Y2, # mode
+             linewidth = 1.25, 
+             linetype = "solid") + 
+  geom_vline(xintercept = mean_Y2, # mean
+             linewidth = 1, 
+             linetype = "dashed", 
+             color = "hotpink") + 
+  xlab(expression(Y[2])) + 
+  ylab(expression(Pr(Y[2] == y[2] ~ "|" ~ theta == hat(theta))))
+
+```
+
+# Ex-3.9(a)
+
+I'll do it in my spare time. It doesn't seem all that important to me although the Galenshore distribution is new to use, we've never heard of it before.
+
+```{r 3.9(a)}
+
+
+
+```
+
