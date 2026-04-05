@@ -35,4 +35,4 @@ This project serves as a technical companion to Peter D. Hoff’s curriculum. It
 
 3. Each .Rmd file is self-contained with the necessary logic to reproduce the exercise results.
 
-Note: If you spot a "sketchy" derivation or a convergence edge case, feel free to open an issue. Even in the art of blaming—or Bayesian inference—there is always room for a tighter prior.
+**Note:** If you spot a "sketchy" derivation or any other technical flaws, feel free to open an issue. There is always room for a tighter prior.
