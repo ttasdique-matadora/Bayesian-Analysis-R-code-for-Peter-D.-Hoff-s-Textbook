@@ -2,7 +2,7 @@
 ## Computational Implementations & Theoretical Applications
 This repository is a programmatic deep-dive into the foundations of Bayesian inference. Moving beyond "black-box" libraries, these scripts focus on the first-principles implementation of posterior simulation and predictive modeling.
 
-## 🎯 Project Scope
+### 🎯 Project Scope
 This project serves as a technical companion to Peter D. Hoff’s curriculum. It bypasses the textbook's inline examples to focus exclusively on original coded solutions for complex exercise problems.
 
 **Mathematical Rigor:** Every script bridges the gap between LaTeX-heavy theory and functional R code.
@@ -11,7 +11,7 @@ This project serves as a technical companion to Peter D. Hoff’s curriculum. It
 
 **Reproducibility:** set.seed() is strictly implemented across all stochastic workflows to ensure consistent results.
 
-## 🛠 Technical Highlights
+### 🛠 Technical Highlights
 
 **Posterior Estimation:** Implementation of conjugate and non-conjugate prior structures.
 
@@ -21,13 +21,13 @@ This project serves as a technical companion to Peter D. Hoff’s curriculum. It
 
 **Predictive Modeling:** Generating posterior predictive distributions to validate model fit against empirical data.
 
-## 📓 Documentation & Data
+### 📓 Documentation & Data
 
 **The "Analogue" Foundation:** While the code is digital, the logic is born on paper. You can find my [Handwritten Research Notes here](https://drive.google.com/file/d/1CE16Hu46E8y0of6WP7IagFOVoXBkcNwU/view?usp=sharing) (pardon the "technologically challenged" aesthetic).
 
 **Data Sourcing:** Datasets are sourced from [Peter Hoff’s official site.](https://www2.stat.duke.edu/~pdh10/FCBS/Exercises/) In cases where raw files were inaccessible, data was reconstructed via OCR and manual transcription to maintain project continuity.
 
-## 🚀 How to Use
+### 🚀 How to Use
 
 1. Ensure you have R installed.
 
