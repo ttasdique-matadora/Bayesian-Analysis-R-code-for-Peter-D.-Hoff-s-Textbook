@@ -17,7 +17,7 @@ This project serves as a technical companion to Peter D. Hoff’s curriculum. It
 
 **MCMC Frameworks:** From-scratch development of Gibbs Samplers.
 
-**Model Families:** Extensive work with Gaussian, Binomial, and Poisson distributions.
+**Model Families:** Extensive work with Gaussian, Binomial, Poisson and Mixture distributions.
 
 **Predictive Modeling:** Generating posterior predictive distributions to validate model fit against empirical data.
 
