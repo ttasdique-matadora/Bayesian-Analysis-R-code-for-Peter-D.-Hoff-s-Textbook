@@ -1,0 +1,276 @@
+---
+title: "CH-7"
+author: "Tawhid Tasdique"
+date: "2026-04-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+pkg <- c("tidyverse",
+         "ggthemes",
+         "rvest",
+         "gridExtra",
+         "MASS",
+         "mvtnorm")
+
+lapply(X = pkg, FUN = library, character.only = T)
+
+set.seed(27)
+
+```
+
+# Fig-7.1
+
+We've been advised to `MASS::mvrnorm` and `stats::rWishart` for simulation purposes. 
+
+The aim here is to replicate the same contour with varying degrees of correlation.
+
+```{r eval=FALSE, include=FALSE}
+
+set.seed(27)
+
+
+dist1 <- 40:60 # same range used in textbook
+#####
+# # uncorrelated
+# dist2 <- mvrnorm(
+#   n = 30,
+#   # sample size
+#   mu = c(50, 50),
+#   # mean vector
+#   Sigma = c(64, 0, 0, 144) %>% # error: vector was provided
+#     matrix(nrow = 2,               # fix: always provide matrix
+#            byrow = T),
+#   # the covariance matrix
+#   empirical = F
+# ) # these are population parameters
+# 
+# # positively correlated
+# dist3 <- mvrnorm(
+#   n = 30,
+#   # sample size
+#   mu = c(50, 50),
+#   # mean vector
+#   Sigma = c(64, 48, 48, 144) %>% # error: vector was provided
+#     matrix(nrow = 2,               # fix: always provide matrix
+#            byrow = T),
+#   # the covariance matrix
+#   empirical = F
+# ) # these are population parameters
+#####
+
+# combined plot
+tibble(
+  y1 = dist1 %>% rep(x = ., each = length(dist1)), 
+  y2 = dist1 %>% rep(x = ., times = length(dist1)), 
+  pdf = 
+) %>%
+  ggplot(aes(x = y1, y = y2)) +
+  geom_contour(aes(z = dmvnorm()))
+
+```
+
+```{r}
+
+library(tidyverse)
+library(mvtnorm)
+
+set.seed(27)
+dist1 <- 40:60
+
+# Define parameters
+mu <- c(50, 50)
+Sigma1 <- matrix(c(64, -48, -48, 144), nrow = 2, byrow = TRUE)
+Sigma2 <- matrix(c(64, 0, 0, 144), nrow = 2, byrow = TRUE)
+Sigma3 <- matrix(c(64, 48, 48, 144), nrow = 2, byrow = TRUE)
+
+# Create the grid and calculate PDF
+plot_data <- tibble(
+  y1 = rep(x = dist1, each = length(dist1)), 
+  y2 = rep(x = dist1, times = length(dist1))
+) %>%
+  mutate(
+    # dmvnorm expects a matrix or data frame of coordinates
+    pdf1 = dmvnorm(x = cbind(y1, y2), mean = mu, sigma = Sigma1), 
+    pdf2 = dmvnorm(x = cbind(y1, y2), mean = mu, sigma = Sigma2),
+    pdf3 = dmvnorm(x = cbind(y1, y2), mean = mu, sigma = Sigma3)
+  )
+
+# negatively correlated
+p1 <- ggplot(plot_data, aes(x = y1, y = y2, z = pdf1)) +
+  geom_contour(aes(color = after_stat(level)), 
+               linewidth = 1.5) + # color codes the isobars
+  coord_fixed() + # Keeps the aspect ratio 1:1
+  theme_minimal() +
+  labs(title = "Bivariate Normal Contour Plot",
+       x = expression(theta[1]),
+       y = expression(theta[2]))
+
+# uncorrelated
+p2 <- ggplot(plot_data, aes(x = y1, y = y2, z = pdf2)) +
+  geom_contour(aes(color = after_stat(level)), 
+               linewidth = 1.5) + # color codes the isobars
+  coord_fixed() + # Keeps the aspect ratio 1:1
+  theme_minimal() +
+  labs(title = "Bivariate Normal Contour Plot",
+       x = expression(theta[1]),
+       y = expression(theta[2]))
+
+# positively correlated
+p3 <- ggplot(plot_data, aes(x = y1, y = y2, z = pdf3)) +
+  geom_contour(aes(color = after_stat(level)), 
+               linewidth = 1.5) + # color codes the isobars
+  coord_fixed() + # Keeps the aspect ratio 1:1
+  theme_minimal() +
+  labs(title = "Bivariate Normal Contour Plot",
+       x = expression(theta[1]),
+       y = expression(theta[2]))
+
+gridExtra::grid.arrange(p1, p2, p3, nrow = 1)
+
+```
+
+# Pg-112: Reading Comprehension
+
+```{r}
+
+# hyper-parameters for theta
+mu0 <- c(50, 50)
+L0 <- c(625, 312.5, 312.5, 625) %>%
+  matrix(nrow = 2, byrow = T)
+
+# hyper-parameters for sigma
+nu0 <- 4 
+# since we're not very confident about Sigma0, we let nu0 = p + 2
+
+# S0 = L0, is deliberately assumed (because it's not reliable enough)
+S0 <- c(625, 312.5, 312.5, 625) %>% # S0 = Sigma0, low-trust prior 
+  matrix(nrow = 2, byrow = T)
+
+Y.reading <- structure(.Data = c(59, 43, 34, 32, 42, 38, 55, 67, 64, 45, 49, 72, 34, 70, 34, 50, 41, 52, 60, 34, 28, 35, 77, 39, 46, 26, 38, 43, 68, 86, 77, 60, 50, 59, 38, 48, 55, 58, 54, 60, 75, 47, 48, 33), 
+                       .Dim = c(22L, 2L), 
+                       .Dimnames = list(NULL, c("pretest", "posttest")))
+
+Y <- Y.reading
+
+n <- Y %>% nrow(); ybar <- colMeans(Y)
+
+# sample covariance matrix
+Sigma <- cov(Y)
+
+# objects for storage purpose
+THETA <- SIGMA <- NULL
+
+# setting seed
+set.seed(27)
+
+# for loop for updating parameters
+for(i in 1:5000){
+  
+  # posterior parameters for location vector
+  mun <- solve(n*solve(Sigma) + solve(L0)) %*% (solve(L0)%*%mu0 + n*solve(Sigma)%*%ybar)
+  Ln <- solve(n*solve(Sigma) + solve(L0))
+  
+  # sampling location vector
+  theta <- mvtnorm::rmvnorm(n = 1, # we only need one random vector
+                            mean = mun, 
+                            sigma = Ln) # note: this is a row vector
+  
+  # update location vector
+  THETA[[i]] <- theta
+  
+  # residual sum of squares matrix given a prior location vector
+  S_theta <- (t(Y) - c(theta)) %*% t(t(Y) - c(theta))
+  # I'm still concerned about how the above expression is carrying out the intended operation. Don't worry, it works, it's legit.
+  
+  # posterior parameters for covariance matrix
+  Sn <- S0 + S_theta
+  
+  # posterior degrees of freedom
+  nun <- nu0 + n
+  
+  # sampling covariance matrix
+  sampled_sigma <- rWishart(
+    n = 1,   
+    df = nun, 
+    Sigma = solve(Sn)
+  ) %>% 
+    as.numeric() %>%
+    matrix(nrow = 2, byrow = T) %>% 
+    solve() 
+  # otherwise you have an information matrix, not what you need
+  
+  # update covariance matrix
+  # double brackets are essential for convenient access
+  SIGMA[[i]] <- sampled_sigma
+  # when you were using list(), you had the Matryoshka problem
+  
+}
+
+# storing difference in locations of before and after 
+del_theta <- sapply(X = 1:length(THETA), 
+                    FUN = function(i){
+                      
+                      THETA[[i]] %>% as.numeric() %>% diff()
+                    
+                      })
+
+# proportion of positive increments in comprehension after intervention
+mean(del_theta > 0)
+
+```
+
+## FIG-7.2
+
+```{r}
+
+theta1 <- sapply(X = 1:length(THETA), 
+                  FUN = function(i){
+                    THETA[[i]][1]
+                  })
+
+theta2 <- sapply(X = 1:length(THETA), 
+                  FUN = function(i){
+                    THETA[[i]][2]
+                  })
+
+# 1. Calculate posterior estimates from your MCMC samples
+post_mu <- colMeans(cbind(theta1, theta2))
+post_sigma <- cov(cbind(theta1, theta2))
+
+# 2. Create a regular grid for the contour to "walk" on
+# grid_range <- seq(min(theta1)-5, max(theta1)+5, length.out = 100)
+grid <- expand.grid(
+  theta1 = seq(min(theta1) - 5, max(theta1) + 5, length.out = 100),
+  theta2 = seq(min(theta2) - 5, max(theta2) + 5, length.out = 100)
+)
+
+# 3. Calculate PDF over that grid
+plot_data <- grid %>%
+  mutate(pdf = dmvnorm(as.matrix(grid), mean = post_mu, sigma = post_sigma))
+
+# 4. Plot
+ggplot(data = plot_data, 
+       mapping = aes(x = theta1, y = theta2, z = pdf)) +
+  geom_contour(mapping = aes(color = after_stat(level)),# plots isobars 
+               linewidth = 1.2) +
+  geom_abline(slope = 1, 
+              intercept = 0) +
+  # Optional: Overlay the actual MCMC points to see if they fit!
+  geom_point(data = tibble(theta1, theta2), 
+             mapping = aes(z = NULL), 
+             alpha = 0.3, 
+             size = 0.5, 
+             color = "red") +
+  coord_fixed() + # what does this do?? fixes the aspect ratio
+  theme_dark() +
+  scale_color_viridis_c() + # color-scheme for color-blind people
+  labs(title = "Posterior Joint Density of Theta",
+       subtitle = "Contours calculated from MCMC posterior covariance",
+       x = expression(theta[1]), 
+       y = expression(theta[2]))
+
+```
+
